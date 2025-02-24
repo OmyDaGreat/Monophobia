@@ -4,10 +4,9 @@ plugins {
     alias(libs.plugins.kotlin.multiplatform)
     alias(libs.plugins.compose.compiler)
     alias(libs.plugins.kobweb.application)
-    // alias(libs.plugins.kobwebx.markdown)
 }
 
-group = "xyz.malefic.singlepage"
+group = "xyz.malefic.monophobia"
 version = "1.0-SNAPSHOT"
 
 kobweb {
@@ -19,7 +18,7 @@ kobweb {
 }
 
 kotlin {
-    configAsKobwebApplication("singlepage")
+    configAsKobwebApplication("monophobia")
 
     sourceSets {
         jsMain.dependencies {
@@ -28,8 +27,6 @@ kotlin {
             implementation(libs.kobweb.core)
             implementation(libs.kobweb.silk)
             implementation(libs.silk.icons.fa)
-            // implementation(libs.kobwebx.markdown)
-            
         }
     }
 }

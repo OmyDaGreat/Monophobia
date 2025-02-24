@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="SonarLintProjectSettings">
+    <option name="moduleMapping">
+      <map>
+        <entry key="monophobia" value="Monophobia" />
+        <entry key="monophobia.site" value="Monophobia.site" />
+        <entry key="monophobia.site.commonMain" value="Monophobia.site.commonMain" />
+        <entry key="monophobia.site.commonTest" value="Monophobia.site.commonTest" />
+        <entry key="monophobia.site.jsMain" value="Monophobia.site.jsMain" />
+        <entry key="monophobia.site.jsTest" value="Monophobia.site.jsTest" />
+      </map>
+    </option>
+  </component>
+</project>
