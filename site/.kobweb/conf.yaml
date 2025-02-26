@@ -6,7 +6,6 @@ server:
     dev:
       contentRoot: "build/processedResources/js/main/public"
       script: "build/kotlin-webpack/js/developmentExecutable/monophobia.js"
-      api: "build/libs/monophobia.jar"
     prod:
       script: "build/kotlin-webpack/js/productionExecutable/monophobia.js"
       siteRoot: ".kobweb/site"

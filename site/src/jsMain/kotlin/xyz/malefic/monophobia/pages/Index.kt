@@ -1,274 +1,333 @@
-@file:Suppress("ktlint:standard:no-wildcard-imports")
-
 package xyz.malefic.monophobia.pages
 
 import androidx.compose.runtime.*
-import com.varabyte.kobweb.compose.css.*
+import com.varabyte.kobweb.compose.css.BackgroundPosition
+import com.varabyte.kobweb.compose.css.BackgroundSize
+import com.varabyte.kobweb.compose.css.CSSPosition
+import com.varabyte.kobweb.compose.css.Cursor
+import com.varabyte.kobweb.compose.css.FontStyle
+import com.varabyte.kobweb.compose.css.FontWeight
+import com.varabyte.kobweb.compose.css.Overflow
+import com.varabyte.kobweb.compose.css.TextAlign
+import com.varabyte.kobweb.compose.css.Transition
+import com.varabyte.kobweb.compose.css.backdropFilter
+import com.varabyte.kobweb.compose.css.boxShadow
+import com.varabyte.kobweb.compose.css.functions.blur
 import com.varabyte.kobweb.compose.css.functions.url
-import com.varabyte.kobweb.compose.foundation.layout.*
+import com.varabyte.kobweb.compose.css.overflow
+import com.varabyte.kobweb.compose.css.transition
+import com.varabyte.kobweb.compose.foundation.layout.Box
+import com.varabyte.kobweb.compose.foundation.layout.Column
+import com.varabyte.kobweb.compose.ui.Alignment
 import com.varabyte.kobweb.compose.ui.Modifier
+import com.varabyte.kobweb.compose.ui.graphics.Color
 import com.varabyte.kobweb.compose.ui.modifiers.*
 import com.varabyte.kobweb.core.Page
-import com.varabyte.kobweb.silk.style.toModifier
+import com.varabyte.kobweb.silk.components.text.SpanText
 import kotlinx.browser.document
 import kotlinx.browser.window
-import kotlinx.coroutines.*
 import org.jetbrains.compose.web.css.*
-import org.jetbrains.compose.web.dom.Text
-import xyz.malefic.monophobia.utils.BackgroundImageStyle
-import xyz.malefic.monophobia.utils.Config
-import xyz.malefic.monophobia.utils.InfoContainerStyle
-import xyz.malefic.monophobia.utils.Particle
-import xyz.malefic.monophobia.utils.ParticleStyle
-import xyz.malefic.monophobia.utils.PopupOverlayStyle
-import xyz.malefic.monophobia.utils.Quote
-import xyz.malefic.monophobia.utils.QuoteContainerStyle
-import xyz.malefic.monophobia.utils.WelcomePopupStyle
-import xyz.malefic.monophobia.utils.createParticle
-import xyz.malefic.monophobia.utils.createRipple
-import xyz.malefic.monophobia.utils.createSwirlEffect
-import xyz.malefic.monophobia.utils.fetchQuote
-import xyz.malefic.monophobia.utils.setupWindowResizeHandler
-import xyz.malefic.monophobia.utils.updateParticles
+import org.jetbrains.compose.web.dom.Div
 import kotlin.js.Date
+import kotlin.math.cos
+import kotlin.math.sin
 import kotlin.random.Random
+
+val PRIMARY_COLOR = Color.rgb(131, 37, 65)
+val SECONDARY_COLOR = Color.rgb(161, 67, 95)
+val ACCENT_COLOR = Color.rgb(241, 147, 175)
+val TEXT_COLOR = Color.rgb(255, 245, 250)
+val DARK_COLOR = Color.rgb(91, 17, 35)
 
 @Page
 @Composable
 fun HomePage() {
+    org.jetbrains.compose.web.dom.Style {
+        "body" style {
+            margin(0.px)
+            padding(0.px)
+            overflow(Overflow.Hidden)
+            fontFamily("Poppins, sans-serif")
+        }
+    }
+
+    var time by remember { mutableStateOf(getCurrentTime()) }
     var mouseX by remember { mutableStateOf(0.0) }
     var mouseY by remember { mutableStateOf(0.0) }
-    var showWelcomePopup by remember { mutableStateOf(true) }
-    var currentQuote by remember { mutableStateOf(Quote("Moment of silence...", "")) }
-    var currentTime by remember { mutableStateOf("") }
-    var currentDate by remember { mutableStateOf("") }
-    val particles = remember { mutableStateListOf<Particle>() }
-    var lastParticleCreation by remember { mutableStateOf(0.0) }
-
-    val scope = rememberCoroutineScope()
 
     LaunchedEffect(Unit) {
-        // Initial quote fetch
-        currentQuote = fetchQuote()
+        val intervalId =
+            window.setInterval({
+                time = getCurrentTime()
+            }, 1000)
 
-        // Welcome popup
-        launch {
-            delay(3000)
-            showWelcomePopup = false
+        val mouseMoveListener: (dynamic) -> Unit = { event ->
+            mouseX = event.clientX as Double
+            mouseY = event.clientY as Double
         }
 
-        // Single update loop for everything
-        scope.launch {
-            var lastTime = Date().getTime()
+        document.addEventListener("mousemove", mouseMoveListener)
 
-            while (true) {
-                val currentTimestamp = Date().getTime()
-                val delta = (currentTimestamp - lastTime) / 16.0
-                lastTime = currentTimestamp
-
-                // Update PST time
-                val now = Date()
-                // Adjust for PST (-8 hours or -7 for PDT)
-                val pstHours = (now.getUTCHours() - 8 + 24) % 24
-
-                // Time in HH:MM:SS format
-                currentTime =
-                    buildString {
-                        append(pstHours.toString().padStart(2, '0'))
-                        append(":")
-                        append(now.getUTCMinutes().toString().padStart(2, '0'))
-                        append(":")
-                        append(now.getUTCSeconds().toString().padStart(2, '0'))
-                    }
-
-                // Date with ordinal (e.g., February 23rd, 2025)
-                val months =
-                    arrayOf(
-                        "January",
-                        "February",
-                        "March",
-                        "April",
-                        "May",
-                        "June",
-                        "July",
-                        "August",
-                        "September",
-                        "October",
-                        "November",
-                        "December",
-                    )
-                val day = now.getUTCDate()
-                val ordinal =
-                    when {
-                        day % 10 == 1 && day != 11 -> "st"
-                        day % 10 == 2 && day != 12 -> "nd"
-                        day % 10 == 3 && day != 13 -> "rd"
-                        else -> "th"
-                    }
-
-                currentDate = "${months[now.getUTCMonth()]} ${day}$ordinal, ${now.getUTCFullYear()}"
-
-                // Update particles with delta time
-                if (!showWelcomePopup) {
-                    updateParticles(particles, mouseX, mouseY, delta)
-                }
-
-                // Random swirl effects when not active
-                if (!showWelcomePopup &&
-                    !document.getElementById("background")?.classList?.contains("active")!!
-                ) {
-                    val x = Random.nextDouble() * window.innerWidth
-                    val y = Random.nextDouble() * window.innerHeight
-                    createSwirlEffect(x, y)
-                }
-
-                delay(16)
-            }
-        }
-
-        // Update quote every 30 minutes
-        scope.launch {
-            while (true) {
-                currentQuote = fetchQuote()
-                delay(30 * 60 * 1000)
-            }
-        }
-
-        // Setup window resize handler
-        setupWindowResizeHandler(particles)
+//        onDispose {
+//            window.clearInterval(intervalId)
+//            document.removeEventListener("mousemove", mouseMoveListener)
+//        }
     }
 
-    Box(Modifier.fillMaxSize().background(Color.black)) {
-        // Background Image
-        Box(
-            BackgroundImageStyle
-                .toModifier()
-                .id("background")
+    Box(
+        modifier =
+            Modifier
                 .fillMaxSize()
-                .position(Position.Fixed)
-                .zIndex(1)
-                .backgroundImage(url("https://gallery.malefic.xyz/photos/aceofhearts/MonophobiaBackground.png"))
+                .backgroundImage(url("https://gallery.malefic.xyz/photos/Ace%20Of%20Hearts/MonophobiaBackground.png"))
                 .backgroundSize(BackgroundSize.Cover)
-                .backgroundPosition(BackgroundPosition.of(CSSPosition.Center)),
+                .backgroundPosition(BackgroundPosition.of(CSSPosition.Center))
+                .fontFamily("Poppins, sans-serif")
+                .color(TEXT_COLOR),
+    ) {
+        // Interactive overlay that creates a subtle color cast
+        Div(
+            attrs = {
+                style {
+                    position(Position.Absolute)
+                    top(0.px)
+                    left(0.px)
+                    right(0.px)
+                    bottom(0.px)
+                    backgroundColor(rgba(PRIMARY_COLOR.red, PRIMARY_COLOR.green, PRIMARY_COLOR.blue, 0.2))
+                    backdropFilter(blur(2.px))
+                }
+            },
         )
 
-        // Particle Container
-        Box(
-            Modifier
-                .id("particle-container")
-                .fillMaxSize()
-                .position(Position.Fixed)
-                .zIndex(2),
-        ) {
-            particles.forEach { particle ->
-                key(particle.id) {
-                    Box(
-                        ParticleStyle
-                            .toModifier()
-                            .position(Position.Absolute)
-                            .left(particle.x.px)
-                            .top(particle.y.px)
-                            .width(particle.size.px)
-                            .height(particle.size.px)
-                            .opacity(particle.opacity)
-                            .boxShadow(BoxShadow.of(0.px, 0.px, 10.px, color = Config.color))
-                            .background(Config.color),
-                    )
-                }
-            }
-        }
+        // Particle system
+        ParticleSystem(mouseX, mouseY)
 
-        // Info Container (Clock and Date)
+        // Clock widget
         Box(
-            InfoContainerStyle.toModifier(),
+            modifier =
+                Modifier
+                    .position(Position.Absolute)
+                    .top(30.px)
+                    .right(30.px)
+                    .backgroundColor(rgba(DARK_COLOR.red, DARK_COLOR.green, DARK_COLOR.blue, 0.85))
+                    .padding(20.px)
+                    .borderRadius(15.px)
+                    .boxShadow(offsetX = 0.px, offsetY = 4.px, blurRadius = 15.px, color = rgba(0, 0, 0, 0.3)),
         ) {
-            Box(
-                Modifier
-                    .fontSize(22.px)
-                    .fontWeight(300)
-                    .letterSpacing(1.px),
-            ) {
-                Text(currentTime)
-            }
-            Box(
-                Modifier
-                    .fontSize(18.px)
-                    .opacity(0.9)
-                    .fontWeight(300)
-                    .letterSpacing(0.5.px),
-            ) {
-                Text(currentDate)
-            }
-        }
-
-        // Quote Container
-        Box(
-            QuoteContainerStyle.toModifier(),
-        ) {
-            Box(
-                Modifier
-                    .fontSize(22.px)
-                    .fontWeight(300)
-                    .letterSpacing(1.px),
-            ) {
-                Text(currentQuote.text)
-            }
-            if (currentQuote.author.isNotEmpty()) {
-                Box(
+            SpanText(
+                text = time,
+                modifier =
                     Modifier
-                        .fontSize(18.px)
-                        .opacity(0.9)
-                        .fontWeight(300)
-                        .letterSpacing(0.5.px),
-                ) {
-                    Text(currentQuote.author)
-                }
+                        .fontSize(2.5.em)
+                        .fontWeight(FontWeight.Bold),
+            )
+        }
+
+        // Interactive card
+        InteractiveCard()
+
+        // Quote display
+        QuoteDisplay()
+    }
+}
+
+@Composable
+fun ParticleSystem(
+    mouseX: Double,
+    mouseY: Double,
+) {
+    // Create particles
+    val particles =
+        remember {
+            List(30) {
+                Particle(
+                    x = Random.nextDouble() * window.innerWidth,
+                    y = Random.nextDouble() * window.innerHeight,
+                    size = Random.nextDouble(3.0, 7.0),
+                    speed = Random.nextDouble(0.2, 1.0),
+                )
             }
         }
 
-        // Welcome Popup
-        if (showWelcomePopup) {
-            Box(
-                PopupOverlayStyle.toModifier(),
-            )
-            Box(
-                WelcomePopupStyle
-                    .toModifier()
-                    .opacity(1)
-                    .transform {
-                        translate((-50).percent, (-50).percent)
-                        scale(1)
-                    },
-            ) {
-                Text("Welcome Malefic")
-            }
-        }
+    var positions by remember { mutableStateOf(particles.map { Pair(it.x, it.y) }) }
+
+    LaunchedEffect(Unit) {
+        val intervalId =
+            window.setInterval({
+                positions =
+                    particles.mapIndexed { index, particle ->
+                        // Update particle position
+                        val dx = (mouseX - particle.x) * 0.01 * particle.speed
+                        val dy = (mouseY - particle.y) * 0.01 * particle.speed
+
+                        particle.x += dx
+                        particle.y += dy
+
+                        // Add some random movement
+                        particle.x += sin(Date().getTime() * 0.001 + index) * 0.5
+                        particle.y += cos(Date().getTime() * 0.001 + index) * 0.5
+
+                        // Keep within boundaries
+                        if (particle.x < 0) particle.x = window.innerWidth.toDouble()
+                        if (particle.x > window.innerWidth) particle.x = 0.0
+                        if (particle.y < 0) particle.y = window.innerHeight.toDouble()
+                        if (particle.y > window.innerHeight) particle.y = 0.0
+
+                        Pair(particle.x, particle.y)
+                    }
+            }, 16)
+
+//        onDispose {
+//            window.clearInterval(intervalId)
+//        }
     }
 
-    // Mouse Event Handler Layer
-    if (!showWelcomePopup) {
-        Box(
-            Modifier
-                .fillMaxSize()
-                .position(Position.Fixed)
-                .zIndex(1000)
-                .onMouseMove { event ->
-                    mouseX = event.clientX.toDouble()
-                    mouseY = event.clientY.toDouble()
-                    document.getElementById("background")?.classList?.add("active")
-
-                    // Throttle particle creation
-                    val now = Date().getTime()
-                    if (now - lastParticleCreation > 16) {
-                        createParticle(mouseX, mouseY, particles)
-                        lastParticleCreation = now
-                    }
-                }.onMouseOut {
-                    document.getElementById("background")?.classList?.remove("active")
-                }.onClick { event ->
-                    createRipple(event.clientX.toDouble(), event.clientY.toDouble())
-                    createSwirlEffect(event.clientX.toDouble(), event.clientY.toDouble())
-                },
+    // Render particles
+    positions.forEachIndexed { index, (x, y) ->
+        val particle = particles[index]
+        Div(
+            attrs = {
+                style {
+                    position(Position.Absolute)
+                    left(x.px)
+                    top(y.px)
+                    width(particle.size.px)
+                    height(particle.size.px)
+                    borderRadius(50.percent)
+                    backgroundColor(rgba(ACCENT_COLOR.red, ACCENT_COLOR.green, ACCENT_COLOR.blue, 0.7))
+                    boxShadow(
+                        offsetX = 0.px,
+                        offsetY = 0.px,
+                        blurRadius = 10.px,
+                        color = rgba(ACCENT_COLOR.red, ACCENT_COLOR.green, ACCENT_COLOR.blue, 0.5),
+                    )
+                    transition(Transition.of("transform", 1.s))
+                    property("transform", "scale(${1 + sin(Date().getTime() * 0.001 + index) * 0.3})")
+                }
+            },
         )
     }
 }
+
+@Composable
+fun InteractiveCard() {
+    var isHovered by remember { mutableStateOf(false) }
+
+    Box(
+        modifier =
+            Modifier
+                .position(Position.Absolute)
+                .bottom(30.px)
+                .left(30.px)
+                .width(300.px)
+                .backgroundColor(rgba(DARK_COLOR.red, DARK_COLOR.green, DARK_COLOR.blue, if (isHovered) 0.95 else 0.85))
+                .padding(20.px)
+                .borderRadius(15.px)
+                .boxShadow(offsetX = 0.px, offsetY = 4.px, blurRadius = 15.px, color = rgba(0, 0, 0, 0.3))
+                .transition(Transition.all(0.3.s))
+                .transform { if (isHovered) translateY((-5).px) else translateY(0.px) }
+                .cursor(Cursor.Pointer)
+                .onMouseEnter { isHovered = true }
+                .onMouseLeave { isHovered = false },
+    ) {
+        Column(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalAlignment = Alignment.CenterHorizontally,
+        ) {
+            SpanText(
+                text = "Welcome Malefic",
+                modifier =
+                    Modifier
+                        .fontSize(1.5.em)
+                        .fontWeight(FontWeight.Bold)
+                        .margin(bottom = 10.px),
+            )
+
+            SpanText(
+                text = "Move your mouse to interact with particles",
+                modifier =
+                    Modifier
+                        .fontSize(0.9.em)
+                        .lineHeight(1.5),
+            )
+
+            if (isHovered) {
+                SpanText(
+                    text = "Created with Kobweb & Kotlin",
+                    modifier =
+                        Modifier
+                            .margin(top = 15.px)
+                            .fontSize(0.8.em)
+                            .color(ACCENT_COLOR),
+                )
+            }
+        }
+    }
+}
+
+@Composable
+fun QuoteDisplay() {
+    val quotes =
+        remember {
+            listOf(
+                "'Elegance is not the abundance of simplicity. It is the absence of complexity.' - Mokokoma Mokhonoana",
+                "'Simplicity is the ultimate sophistication.' - Leonardo da Vinci",
+                "'The art of being wise is knowing what to overlook.' - William James",
+                "'The most complicated skill is to be simple.' - Dejan Stojanovic",
+            )
+        }
+
+    var currentQuote by remember { mutableStateOf(quotes[0]) }
+
+    LaunchedEffect(Unit) {
+        val intervalId =
+            window.setInterval({
+                val nextIndex = (quotes.indexOf(currentQuote) + 1) % quotes.size
+                currentQuote = quotes[nextIndex]
+            }, 10000) // Change quote every 10 seconds
+
+//        onDispose {
+//            window.clearInterval(intervalId)
+//        }
+    }
+
+    Box(
+        modifier =
+            Modifier
+                .position(Position.Absolute)
+                .top(50.percent)
+                .left(50.percent)
+                .transform { translate((-50).percent, (-50).percent) }
+                .width(60.percent)
+                .maxWidth(700.px)
+                .backgroundColor(rgba(DARK_COLOR.red, DARK_COLOR.green, DARK_COLOR.blue, 0.8))
+                .padding(30.px)
+                .borderRadius(10.px)
+                .boxShadow(offsetX = 0.px, offsetY = 4.px, blurRadius = 15.px, color = rgba(0, 0, 0, 0.3)),
+    ) {
+        SpanText(
+            text = currentQuote,
+            modifier =
+                Modifier
+                    .fontSize(1.8.em)
+                    .fontStyle(FontStyle.Italic)
+                    .textAlign(TextAlign.Center)
+                    .fillMaxWidth(),
+        )
+    }
+}
+
+fun getCurrentTime(): String {
+    val date = Date()
+    val hours = date.getHours().toString().padStart(2, '0')
+    val minutes = date.getMinutes().toString().padStart(2, '0')
+    val seconds = date.getSeconds().toString().padStart(2, '0')
+    return "$hours:$minutes:$seconds"
+}
+
+class Particle(
+    var x: Double,
+    var y: Double,
+    val size: Double,
+    val speed: Double,
+)
