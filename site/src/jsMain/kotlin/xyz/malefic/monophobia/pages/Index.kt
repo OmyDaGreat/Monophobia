@@ -1,3 +1,5 @@
+@file:Suppress("ktlint:standard:no-wildcard-imports")
+
 package xyz.malefic.monophobia.pages
 
 import androidx.compose.runtime.*
@@ -26,6 +28,9 @@ import com.varabyte.kobweb.core.Page
 import com.varabyte.kobweb.silk.components.text.SpanText
 import kotlinx.browser.document
 import kotlinx.browser.window
+import kotlinx.coroutines.MainScope
+import kotlinx.coroutines.await
+import kotlinx.coroutines.launch
 import org.jetbrains.compose.web.css.*
 import org.jetbrains.compose.web.dom.Div
 import kotlin.js.Date
@@ -34,7 +39,6 @@ import kotlin.math.sin
 import kotlin.random.Random
 
 val PRIMARY_COLOR = Color.rgb(131, 37, 65)
-val SECONDARY_COLOR = Color.rgb(161, 67, 95)
 val ACCENT_COLOR = Color.rgb(241, 147, 175)
 val TEXT_COLOR = Color.rgb(255, 245, 250)
 val DARK_COLOR = Color.rgb(91, 17, 35)
@@ -267,28 +271,12 @@ fun InteractiveCard() {
 
 @Composable
 fun QuoteDisplay() {
-    val quotes =
-        remember {
-            listOf(
-                "'Elegance is not the abundance of simplicity. It is the absence of complexity.' - Mokokoma Mokhonoana",
-                "'Simplicity is the ultimate sophistication.' - Leonardo da Vinci",
-                "'The art of being wise is knowing what to overlook.' - William James",
-                "'The most complicated skill is to be simple.' - Dejan Stojanovic",
-            )
-        }
-
-    var currentQuote by remember { mutableStateOf(quotes[0]) }
+    var quote by remember { mutableStateOf(Quote("Loading...", "Unknown")) }
 
     LaunchedEffect(Unit) {
-        val intervalId =
-            window.setInterval({
-                val nextIndex = (quotes.indexOf(currentQuote) + 1) % quotes.size
-                currentQuote = quotes[nextIndex]
-            }, 10000) // Change quote every 10 seconds
-
-//        onDispose {
-//            window.clearInterval(intervalId)
-//        }
+        window.setInterval({
+            MainScope().launch { quote = fetchQuote() }
+        }, 60000 * 30) // Change quote every 10 seconds
     }
 
     Box(
@@ -306,7 +294,7 @@ fun QuoteDisplay() {
                 .boxShadow(offsetX = 0.px, offsetY = 4.px, blurRadius = 15.px, color = rgba(0, 0, 0, 0.3)),
     ) {
         SpanText(
-            text = currentQuote,
+            text = "${quote.text} - ${quote.author}",
             modifier =
                 Modifier
                     .fontSize(1.8.em)
@@ -316,6 +304,36 @@ fun QuoteDisplay() {
         )
     }
 }
+
+suspend fun fetchQuote(): Quote {
+    try {
+        console.log("Fetching JSON...")
+        val response = window.fetch("https://daily.malefic.xyz/quote").await()
+
+        if (!response.ok) {
+            console.error("Failed to fetch: ${response.statusText}")
+            return Quote("A moment of silence...", "Unknown")
+        }
+
+        console.log("Received response, parsing JSON...")
+        val json: dynamic = response.json().await() // Convert response to JSON
+
+        // Accessing fields dynamically
+        val text: String = json.text as String
+        val author: String = json.author as String
+
+        console.log("Received key1: $text, key2: $author")
+        return Quote(text, author)
+    } catch (e: Throwable) {
+        console.error("Error fetching JSON: $e")
+        return Quote("A moment of silence...", "Unknown")
+    }
+}
+
+data class Quote(
+    val text: String,
+    val author: String,
+)
 
 fun getCurrentTime(): String {
     val date = Date()
