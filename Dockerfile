@@ -20,9 +20,10 @@ RUN apt-get update \
     && apt-get clean \
     && update-ca-certificates -f
 
-# Setup JAVA_HOME -- needed by kobweb / gradle
-ENV JAVA_HOME=/usr/lib/jvm/jdk-21
-RUN export JAVA_HOME=$JAVA_HOME
+# Setup JAVA_HOME dynamically
+RUN export JAVA_HOME=$(update-alternatives --query java | grep 'Value: ' | awk '{print $2}' | sed 's:/bin/java::') \
+    && echo "JAVA_HOME is set to $JAVA_HOME"
+ENV JAVA_HOME=$JAVA_HOME
 RUN java -version
 
 # Add Chrome (for export)
