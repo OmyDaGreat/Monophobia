@@ -11,7 +11,7 @@ COPY . .
 RUN chmod +x gradlew
 
 # Build the project (adjust the build command as needed)
-RUN ./gradlew build
+RUN ./gradlew kobwebExport
 
 # Use an official Eclipse Temurin runtime as a parent image for the runtime
 FROM eclipse-temurin:21-jre
