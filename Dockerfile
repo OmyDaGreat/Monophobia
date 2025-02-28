@@ -4,11 +4,9 @@ USER root
 # Copy the project code to app dir
 COPY . /app
 
-# Install OpenJDK-11 (earliest JDK kobweb can run on)
-RUN apt-get update \
-    && apt-get install -y openjdk-11-jdk \
-    && apt-get install -y ant \
-    && apt-get clean
+# Install OpenJDK-21
+RUN wget https://download.oracle.com/java/21/latest/jdk-21_linux-x64_bin.deb \
+    && sudo dpkg -i jdk-21_linux-x64_bin.deb
 
 # Fix certificate issues
 RUN apt-get update \
@@ -17,7 +15,7 @@ RUN apt-get update \
     && update-ca-certificates -f
 
 # Setup JAVA_HOME -- needed by kobweb / gradle
-ENV JAVA_HOME /usr/lib/jvm/java-11-openjdk-amd64/
+ENV JAVA_HOME=/usr/lib/jvm/jdk-21-oracle-x64/
 RUN export JAVA_HOME
 RUN java -version
 
