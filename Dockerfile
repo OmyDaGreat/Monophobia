@@ -32,7 +32,7 @@ RUN apt-get update && apt-get install -y \
     libxkbcommon0 \
     libpango-1.0-0 \
     libcairo2 \
-    libasound2
+    libasound2t64
 
 # Build the project (adjust the build command as needed)
 RUN ./gradlew kobwebExport
