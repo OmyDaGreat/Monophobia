@@ -4,8 +4,11 @@ USER root
 # Copy the project code to app dir
 COPY . /app
 
-# Install wget
-RUN apt-get update && apt-get install -y wget && apt-get clean
+# Install wget and sudo
+RUN apt-get update  \
+    && apt-get install -y wget  \
+    && apt-get install -y sudo  \
+    && apt-get clean
 
 # Install OpenJDK-21
 RUN wget https://download.oracle.com/java/21/latest/jdk-21_linux-x64_bin.deb \
