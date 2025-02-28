@@ -2,10 +2,9 @@ services:
   kobweb:
     build: .
     ports:
-      - "8080:8080"
-    restart: unless-stopped
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8080"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
+      - "8080:8080"  # Change the first port (host) if you want to expose it on a different port
+    environment:
+      - PORT=8080  # Change this if you want the application to run on a different port inside the container
+    volumes:
+      - .:/app  # Mount the current directory to /app in the container
+    working_dir: /app/site  # Set the working directory to /app/site
