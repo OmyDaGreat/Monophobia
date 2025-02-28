@@ -1,71 +1,67 @@
-# Build stage
-FROM eclipse-temurin:21-jdk as builder
+FROM debian:stable-slim
+USER root
 
-# Set working directory
+# Copy the project code to app dir
+COPY . /app
+
+# Install OpenJDK-11 (earliest JDK kobweb can run on)
+RUN apt-get update \
+    && apt-get install -y openjdk-11-jdk \
+    && apt-get install -y ant \
+    && apt-get clean
+
+# Fix certificate issues
+RUN apt-get update \
+    && apt-get install ca-certificates-java \
+    && apt-get clean \
+    && update-ca-certificates -f
+
+# Setup JAVA_HOME -- needed by kobweb / gradle
+ENV JAVA_HOME /usr/lib/jvm/java-11-openjdk-amd64/
+RUN export JAVA_HOME
+RUN java -version
+
+# Add Chrome (for export)
+RUN apt-get update \
+    && apt-get install -y \
+    apt-transport-https \
+    ca-certificates \
+    curl \
+    gnupg \
+    --no-install-recommends \
+    && curl -sSL https://dl.google.com/linux/linux_signing_key.pub | apt-key add - \
+    && echo "deb https://dl.google.com/linux/chrome/deb/ stable main" > /etc/apt/sources.list.d/google-chrome.list \
+    && apt-get update && apt-get install -y \
+    google-chrome-stable \
+    fontconfig \
+    fonts-ipafont-gothic \
+    fonts-wqy-zenhei \
+    fonts-thai-tlwg \
+    fonts-kacst \
+    fonts-symbola \
+    fonts-noto \
+    fonts-freefont-ttf \
+    --no-install-recommends
+
+# Install kobweb
+RUN apt-get update && apt-get install -y wget unzip
+
+RUN wget https://github.com/varabyte/kobweb/releases/download/cli-v0.9.4/kobweb-0.9.4.zip \
+    && unzip kobweb-0.9.4.zip \
+    && rm -r kobweb-0.9.4.zip
+ENV PATH="/kobweb-0.9.4/bin:${PATH}"
+
 WORKDIR /app
 
-# Set Kobweb version
-ENV KOBWEB_CLI_VERSION=0.9.18
+RUN kobweb export --mode dumb
 
-# Install required packages including Playwright dependencies
-RUN apt-get update && apt-get install -y \
-    unzip \
-    curl \
-    libglib2.0-0 \
-    libnss3 \
-    libnspr4 \
-    libdbus-1-3 \
-    libatk1.0-0 \
-    libatk-bridge2.0-0 \
-    libcups2 \
-    libdrm2 \
-    libatspi2.0-0 \
-    libx11-6 \
-    libxcomposite1 \
-    libxdamage1 \
-    libxext6 \
-    libxfixes3 \
-    libxrandr2 \
-    libgbm1 \
-    libxcb1 \
-    libxkbcommon0 \
-    libpango-1.0-0 \
-    libcairo2 \
-    libasound2 \
+RUN export PORT=$(kobweb conf server.port)
+EXPOSE $PORT
+
+# Purge all the things we don't need anymore
+
+RUN apt-get purge --auto-remove -y curl gnupg wget unzip \
     && rm -rf /var/lib/apt/lists/*
 
-# Download and install Playwright browser
-RUN curl -L -o playwright.deb https://github.com/microsoft/playwright/releases/download/v1.41.2/ms-playwright-focal_1.41.2-1_amd64.deb \
-    && apt-get update \
-    && apt-get install -y ./playwright.deb \
-    && rm playwright.deb \
-    && rm -rf /var/lib/apt/lists/*
-
-# Copy project files
-COPY . .
-
-# TODO: RUN PRODUCTION INSTEAD OF EXPORTING
-
-# Download and setup Kobweb CLI
-RUN curl -L -o kobweb.zip https://github.com/varabyte/kobweb-cli/releases/download/v${KOBWEB_CLI_VERSION}/kobweb-${KOBWEB_CLI_VERSION}.zip \
-    && unzip kobweb.zip \
-    && chmod +x kobweb-${KOBWEB_CLI_VERSION}/bin/kobweb
-
-# Build the project
-RUN ./gradlew build
-
-# Export the site
-RUN cd site && \
-    ../kobweb-${KOBWEB_CLI_VERSION}/bin/kobweb export --layout static --notty
-
-# Serve stage
-FROM nginx:alpine
-
-# Copy the built site to nginx
-COPY --from=builder /app/site/.kobweb/site /usr/share/nginx/html
-
-# Copy custom nginx configuration
-COPY nginx.conf /etc/nginx/conf.d/default.conf
-
-# Expose port
-EXPOSE 8080
+# Keep container running because `kobweb run --mode dumb` doesn't block
+CMD kobweb run --mode dumb --env prod && tail -f /dev/null
