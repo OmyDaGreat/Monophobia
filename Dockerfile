@@ -1,5 +1,5 @@
 # Use an official Eclipse Temurin runtime as a parent image
-FROM eclipse-temurin:21-jdk AS build
+FROM eclipse-temurin:23-jdk AS build
 
 # Set the working directory
 WORKDIR /app
@@ -14,7 +14,7 @@ RUN chmod +x gradlew
 RUN ./gradlew build
 
 # Use an official Eclipse Temurin runtime as a parent image for the runtime
-FROM eclipse-temurin:21-jre
+FROM eclipse-temurin:23-jre
 
 # Set the working directory
 WORKDIR /app/site
