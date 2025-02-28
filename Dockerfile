@@ -21,8 +21,8 @@ RUN apt-get update \
     && update-ca-certificates -f
 
 # Setup JAVA_HOME -- needed by kobweb / gradle
-ENV JAVA_HOME=/usr/lib/jvm/jdk-21-oracle-x64/
-RUN export JAVA_HOME
+ENV JAVA_HOME=/usr/lib/jvm/jdk-21
+RUN export JAVA_HOME=$JAVA_HOME
 RUN java -version
 
 # Add Chrome (for export)
