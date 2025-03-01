@@ -10,8 +10,9 @@ COPY . .
 # Make gradlew executable
 RUN chmod +x gradlew
 
-# Install system dependencies for Playwright
+# Install Node.js and Playwright dependencies
 RUN apt-get update && apt-get install -y \
+    curl \
     libglib2.0-0 \
     libnss3 \
     libnspr4 \
@@ -32,10 +33,11 @@ RUN apt-get update && apt-get install -y \
     libxkbcommon0 \
     libpango-1.0-0 \
     libcairo2 \
-    libasound2t64
-
-# Install Playwright dependencies
-RUN npx playwright install-deps
+    libasound2t64 && \
+    curl -fsSL https://deb.nodesource.com/setup_16.x | bash - && \
+    apt-get install -y nodejs && \
+    npm install -g playwright && \
+    playwright install-deps
 
 # Build the project (adjust the build command as needed)
 RUN ./gradlew kobwebExport
