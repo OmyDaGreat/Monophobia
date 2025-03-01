@@ -34,6 +34,9 @@ RUN apt-get update && apt-get install -y \
     libcairo2 \
     libasound2t64
 
+# Install Playwright dependencies
+RUN npx playwright install-deps
+
 # Build the project (adjust the build command as needed)
 RUN ./gradlew kobwebExport
 
