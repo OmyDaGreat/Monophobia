@@ -39,6 +39,11 @@ RUN apt-get update && apt-get install -y \
     npm install -g playwright && \
     playwright install-deps
 
+# Disable Chromium GPU process
+ENV PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=1
+RUN npx playwright install chromium
+RUN echo '{ "executablePath": "/root/.cache/ms-playwright/chromium-1124/chrome-linux/chrome", "args": ["--disable-gpu", "--disable-software-rasterizer"] }' > /root/.playwright/config.json
+
 # Build the project (adjust the build command as needed)
 RUN ./gradlew kobwebExport
 
