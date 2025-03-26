@@ -1,5 +1,5 @@
 # Use an official Eclipse Temurin runtime as a parent image
-FROM eclipse-temurin:21-jdk AS build
+FROM eclipse-temurin:24-jdk AS build
 
 # Set the working directory
 WORKDIR /app
@@ -48,7 +48,7 @@ RUN echo '{ "executablePath": "/root/.cache/ms-playwright/chromium-1124/chrome-l
 RUN ./gradlew kobwebExport
 
 # Use an official Eclipse Temurin runtime as a parent image for the runtime
-FROM eclipse-temurin:21-jre
+FROM eclipse-temurin:24-jre
 
 # Set the working directory
 WORKDIR /app/site
